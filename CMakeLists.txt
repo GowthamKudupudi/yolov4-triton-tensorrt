@@ -15,6 +15,7 @@ else()
     link_directories(/usr/local/cuda/lib64)
 endif()
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -O0")
 
 # LAYER PLUGIN LIB
 cuda_add_library(layerplugin SHARED ${PROJECT_SOURCE_DIR}/layers/yololayer.cu)
