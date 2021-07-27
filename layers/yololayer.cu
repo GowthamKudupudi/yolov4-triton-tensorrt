@@ -98,11 +98,19 @@ namespace nvinfer1
         CHECK(cudaFree(mAnchors));
     }
 
-    Dims YoloLayerPlugin::getOutputDimensions(int index, const Dims* inputs, int nbInputDims)
-    {
+    Dims YoloLayerPlugin::getOutputDimensions (
+	int index, const Dims* inputs, int nbInputDims
+    ) {
         assert(index == 0);
         assert(nbInputDims == 1);
-        assert(inputs[0].d[0] == (mNumClasses + 5) * mNumAnchors);
+	printf("inputs[0].d[0]: %d == (Classes+5)*Anchors\n", inputs[0].d[0]);
+        printf("inputs[0].d[1]: %d == YoloHeight: %d\n", inputs[0].d[1],
+	    mYoloHeight);
+        printf("inputs[0].d[2]: %d == YoloWidth: %d\n", inputs[0].d[2],
+	    mYoloWidth);
+        printf("mNumClasses: %d\n", mNumClasses);
+	printf("mNumAnchors: %d\n", mNumAnchors);	
+        //assert(inputs[0].d[0] == (mNumClasses + 5) * mNumAnchors);
         assert(inputs[0].d[1] == mYoloHeight);
         assert(inputs[0].d[2] == mYoloWidth);
         // output detection results to the channel dimension

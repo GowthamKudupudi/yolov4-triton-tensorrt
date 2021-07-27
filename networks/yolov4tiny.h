@@ -11,6 +11,7 @@ using namespace std;
 
 #define USE_FP16
 //#define USE_FP32
+typedef  unsigned int uint;
 
 namespace yolov4tiny {
 
@@ -124,7 +125,9 @@ namespace yolov4tiny {
     }
 
     ICudaEngine* createEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt, const std::string &weightsPath) {
-        INetworkDefinition* network = builder->createNetworkV2(0U);
+        INetworkDefinition* network = builder->createNetworkV2 (
+		0U << (uint) NetworkDefinitionCreationFlag::kEXPLICIT_BATCH |
+		0U << (uint) NetworkDefinitionCreationFlag::kEXPLICIT_PRECISION );
 
         // Create input tensor of shape {3, INPUT_H, INPUT_W} with name INPUT_BLOB_NAME
         ITensor* data = network->addInput(INPUT_BLOB_NAME, dt, Dims3{3, INPUT_H, INPUT_W});
@@ -195,7 +198,7 @@ namespace yolov4tiny {
 	cout << "Adding leaky convolution 28\n";
         auto l28 = convBnLeaky(network, weightMap, *l27->getOutput(0), 512, 3, 1, 1, 28);
 	cout << "Adding linear convolution 29\n";
-        IConvolutionLayer *conv29 = network->addConvolutionNd(*l28->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["model.29.conv.weight"], weightMap["model.29.conv.bias"]);
+        IConvolutionLayer *conv29 = network->addConvolutionNd(*l28->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.29.Conv2d.weight"], weightMap["module_list.29.Conv2d.bias"]);
         assert(conv29);
 
         // 30 is a yolo layer
@@ -213,7 +216,7 @@ namespace yolov4tiny {
 	cout << "Adding leaky convolution 35\n";
         auto l35 = convBnLeaky(network, weightMap, *cat34->getOutput(0), 256, 3, 1, 1, 35);
 	cout << "Adding linear convolution 36\n";
-        IConvolutionLayer *conv36 = network->addConvolutionNd(*l35->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["model.36.conv.weight"], weightMap["model.36.conv.bias"]);
+        IConvolutionLayer *conv36 = network->addConvolutionNd(*l35->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.36.Conv2d.weight"], weightMap["module_list.36.Conv2d.bias"]);
         assert(conv36);
 
         // 37 is a yolo layer
