@@ -9,8 +9,8 @@
 using namespace nvinfer1;
 using namespace std;
 
-#define USE_FP16
-//#define USE_FP32
+//#define USE_FP16
+#define USE_FP32
 typedef  unsigned int uint;
 
 namespace yolov4tiny {
@@ -136,105 +136,108 @@ namespace yolov4tiny {
         std::map<std::string, Weights> weightMap = loadWeights(weightsPath);
 
         // define each layer.
-        auto l0 = convBnLeaky(network, weightMap, *data, 32, 3, 2, 1, 0);
-        auto l1 = convBnLeaky(network, weightMap, *l0->getOutput(0), 64, 3, 2, 1, 1);
-        auto l2 = convBnLeaky(network, weightMap, *l1->getOutput(0), 64, 3, 1, 1, 2);
-        ISliceLayer *l3 = network->addSlice(*l2->getOutput(0), Dims3{0, 0, 0}, Dims3{32, INPUT_W / 4, INPUT_H / 4}, Dims3{1, 1, 1});
-        auto l4 = convBnLeaky(network, weightMap, *l3->getOutput(0), 32, 3, 1, 1, 4);
-        auto l5 = convBnLeaky(network, weightMap, *l4->getOutput(0), 32, 3, 1, 1, 5);
+        ILayer* l0 = convBnLeaky(network, weightMap, *data, 32, 3, 2, 1, 0);
+        ILayer* l1 = convBnLeaky(network, weightMap, *l0->getOutput(0), 64, 3, 2, 1, 1);
+        ILayer* l2 = convBnLeaky(network, weightMap, *l1->getOutput(0), 64, 3, 1, 1, 2);
+        ISliceLayer* l3 = network->addSlice(*l2->getOutput(0), Dims3{0, 0, 0}, Dims3{32, INPUT_W / 4, INPUT_H / 4}, Dims3{1, 1, 1});
+        ILayer* l4 = convBnLeaky(network, weightMap, *l3->getOutput(0), 32, 3, 1, 1, 4);
+        ILayer* l5 = convBnLeaky(network, weightMap, *l4->getOutput(0), 32, 3, 1, 1, 5);
 	cout << "Adding route 6" << endl;
-        ITensor *inputTensors6[] = {l5->getOutput(0), l4->getOutput(0)};
-        auto cat6 = network->addConcatenation(inputTensors6, 2);
+        ITensor* inputTensors6[] = {l5->getOutput(0), l4->getOutput(0)};
+        IConcatenationLayer* cat6 = network->addConcatenation(inputTensors6, 2);
 	cout << "Adding leaky convolution 7" << endl;
-        auto l7 = convBnLeaky(network, weightMap, *cat6->getOutput(0), 64, 1, 1, 0, 7);
+        ILayer* l7 = convBnLeaky(network, weightMap, *cat6->getOutput(0), 64, 1, 1, 0, 7);
         cout << "Adding route 8" << endl;
-        ITensor *inputTensors8[] = {l2->getOutput(0), l7->getOutput(0)};
-        auto cat8 = network->addConcatenation(inputTensors8, 2);
+        ITensor* inputTensors8[] = {l2->getOutput(0), l7->getOutput(0)};
+        IConcatenationLayer* cat8 = network->addConcatenation(inputTensors8, 2);
         cout << "Adding maxpool 9" << endl;
-        auto pool9 = network->addPoolingNd(*cat8->getOutput(0), PoolingType::kMAX, DimsHW{2, 2});
+        IPoolingLayer* pool9 = network->addPoolingNd(*cat8->getOutput(0), PoolingType::kMAX, DimsHW{2, 2});
         pool9->setStrideNd(DimsHW{2, 2});
         cout << "Adding leaky convolution 10" << endl;
-	auto l10 = convBnLeaky(network, weightMap, *pool9->getOutput(0), 128, 3, 1, 1, 10);
+	ILayer* l10 = convBnLeaky(network, weightMap, *pool9->getOutput(0), 128, 3, 1, 1, 10);
 	cout << "Adding route 11\n";
-        ISliceLayer *l11 = network->addSlice(*l10->getOutput(0), Dims3{0, 0, 0}, Dims3{64, INPUT_W / 8, INPUT_H / 8}, Dims3{1, 1, 1});
+        ISliceLayer* l11 = network->addSlice(*l10->getOutput(0), Dims3{0, 0, 0}, Dims3{64, INPUT_W / 8, INPUT_H / 8}, Dims3{1, 1, 1});
 	cout << "Adding leaky convolution 12\n";
-        auto l12 = convBnLeaky(network, weightMap, *l11->getOutput(0), 64, 3, 1, 1, 12);
+        ILayer* l12 = convBnLeaky(network, weightMap, *l11->getOutput(0), 64, 3, 1, 1, 12);
 	cout << "Adding leaky convolution 13\n";
-        auto l13 = convBnLeaky(network, weightMap, *l12->getOutput(0), 64, 3, 1, 1, 13);
+        ILayer* l13 = convBnLeaky(network, weightMap, *l12->getOutput(0), 64, 3, 1, 1, 13);
 	cout << "Adding route 14\n";
         ITensor *inputTensors14[] = {l13->getOutput(0), l12->getOutput(0)};
-        auto cat14 = network->addConcatenation(inputTensors14, 2);
+        IConcatenationLayer* cat14 = network->addConcatenation(inputTensors14, 2);
 	cout << "Adding leaky convolution 15\n";
-        auto l15 = convBnLeaky(network, weightMap, *cat14->getOutput(0), 128, 1, 1, 0, 15);
+        ILayer* l15 = convBnLeaky(network, weightMap, *cat14->getOutput(0), 128, 1, 1, 0, 15);
 	cout << "Adding route 16\n";
-        ITensor *inputTensors16[] = {l10->getOutput(0), l15->getOutput(0)};
-        auto cat16 = network->addConcatenation(inputTensors16, 2);
+        ITensor* inputTensors16[] = {l10->getOutput(0), l15->getOutput(0)};
+        IConcatenationLayer* cat16 = network->addConcatenation(inputTensors16, 2);
 	cout << "Adding max pool 17\n";
-        auto pool17 = network->addPoolingNd(*cat16->getOutput(0), PoolingType::kMAX, DimsHW{2, 2});
+        IPoolingLayer* pool17 = network->addPoolingNd(*cat16->getOutput(0), PoolingType::kMAX, DimsHW{2, 2});
         pool17->setStrideNd(DimsHW{2, 2});
 	cout << "Adding leaky convolution 18\n";
-        auto l18 = convBnLeaky(network, weightMap, *pool17->getOutput(0), 256, 3, 1, 1, 18);
+        ILayer* l18 = convBnLeaky(network, weightMap, *pool17->getOutput(0), 256, 3, 1, 1, 18);
 	cout << "Adding route 19\n";
-        ISliceLayer *l19 = network->addSlice(*l18->getOutput(0), Dims3{0, 0, 0}, Dims3{128, INPUT_W / 16, INPUT_H / 16}, Dims3{1, 1, 1});
+        ISliceLayer* l19 = network->addSlice(*l18->getOutput(0), Dims3{0, 0, 0}, Dims3{128, INPUT_W / 16, INPUT_H / 16}, Dims3{1, 1, 1});
         cout << "Adding leaky convolution 20\n";
-	auto l20 = convBnLeaky(network, weightMap, *l19->getOutput(0), 128, 3, 1, 1, 20);
+	ILayer* l20 = convBnLeaky(network, weightMap, *l19->getOutput(0), 128, 3, 1, 1, 20);
 	cout << "Adding leaky convolution 21\n";
-        auto l21 = convBnLeaky(network, weightMap, *l20->getOutput(0), 128, 3, 1, 1, 21);
+        ILayer* l21 = convBnLeaky(network, weightMap, *l20->getOutput(0), 128, 3, 1, 1, 21);
 	cout << "Adding route 22\n";
-        ITensor *inputTensors22[] = {l21->getOutput(0), l20->getOutput(0)};
-        auto cat22 = network->addConcatenation(inputTensors22, 2);
+        ITensor* inputTensors22[] = {l21->getOutput(0), l20->getOutput(0)};
+        IConcatenationLayer* cat22 = network->addConcatenation(inputTensors22, 2);
         cout << "Adding leaky convolution 23\n";
-	auto l23 = convBnLeaky(network, weightMap, *cat22->getOutput(0), 256, 1, 1, 0, 23);
+	ILayer* l23 = convBnLeaky(network, weightMap, *cat22->getOutput(0), 256, 1, 1, 0, 23);
 	cout << "Adding route 24\n";
-        ITensor *inputTensors24[] = {l18->getOutput(0), l23->getOutput(0)};
-        auto cat24 = network->addConcatenation(inputTensors24, 2);
+        ITensor* inputTensors24[] = {l18->getOutput(0), l23->getOutput(0)};
+        IConcatenationLayer* cat24 = network->addConcatenation(inputTensors24, 2);
 	cout << "Adding maxpool 25\n";
-        auto pool25 = network->addPoolingNd(*cat24->getOutput(0), PoolingType::kMAX, DimsHW{2, 2});
+        IPoolingLayer* pool25 = network->addPoolingNd(*cat24->getOutput(0), PoolingType::kMAX, DimsHW{2, 2});
         pool25->setStrideNd(DimsHW{2, 2});
 	cout << "Adding leaky convolution 26\n";
-        auto l26 = convBnLeaky(network, weightMap, *pool25->getOutput(0), 512, 3, 1, 1, 26);
+        ILayer* l26 = convBnLeaky(network, weightMap, *pool25->getOutput(0), 512, 3, 1, 1, 26);
 	cout << "Adding leaky convolution 27\n";
-        auto l27 = convBnLeaky(network, weightMap, *l26->getOutput(0), 256, 1, 1, 0, 27);
+        ILayer* l27 = convBnLeaky(network, weightMap, *l26->getOutput(0), 256, 1, 1, 0, 27);
 	cout << "Adding leaky convolution 28\n";
-        auto l28 = convBnLeaky(network, weightMap, *l27->getOutput(0), 512, 3, 1, 1, 28);
+        ILayer* l28 = convBnLeaky(network, weightMap, *l27->getOutput(0), 512, 3, 1, 1, 28);
 	cout << "Adding linear convolution 29\n";
-        IConvolutionLayer *conv29 = network->addConvolutionNd(*l28->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.29.Conv2d.weight"], weightMap["module_list.29.Conv2d.bias"]);
+        IConvolutionLayer* conv29 = network->addConvolutionNd(*l28->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.29.Conv2d.weight"], weightMap["module_list.29.Conv2d.bias"]);
         assert(conv29);
 
         // 30 is a yolo layer
 	cout << "Adding yolo layer 30\n";
-        auto yolo30 = yoloLayer(network, *conv29->getOutput(0), INPUT_W, INPUT_H, YOLO_FACTOR_1, YOLO_FACTOR_1, CLASS_NUM, YOLO_ANCHORS_1, YOLO_SCALE_XY_1, YOLO_NEWCOORDS_1);
+        IPluginV2Layer* yolo30 = yoloLayer(network, *conv29->getOutput(0), INPUT_W, INPUT_H, YOLO_FACTOR_1, YOLO_FACTOR_1, CLASS_NUM, YOLO_ANCHORS_1, YOLO_SCALE_XY_1, YOLO_NEWCOORDS_1);
 	cout << "Adding route 31\n";
-        auto l31 = l27;
+        ILayer* l31 = l27;
 	cout << "Adding leaky convolution 32\n";
-        auto l32 = convBnLeaky(network, weightMap, *l31->getOutput(0), 128, 1, 1, 0, 32);
+        ILayer* l32 = convBnLeaky(network, weightMap, *l31->getOutput(0), 128, 1, 1, 0, 32);
         cout << "Adding upsample 33\n";
-	auto deconv33 = upSample(network, weightMap, *l32->getOutput(0), 128);
+	ILayer* deconv33 = upSample(network, weightMap, *l32->getOutput(0), 128);
         cout << "Adding route 34\n";
-	ITensor *inputTensors34[] = {deconv33->getOutput(0), l23->getOutput(0)};
-        auto cat34 = network->addConcatenation(inputTensors34, 2);
+	ITensor* inputTensors34[] = {deconv33->getOutput(0), l23->getOutput(0)};
+        IConcatenationLayer* cat34 = network->addConcatenation(inputTensors34, 2);
 	cout << "Adding leaky convolution 35\n";
-        auto l35 = convBnLeaky(network, weightMap, *cat34->getOutput(0), 256, 3, 1, 1, 35);
+        ILayer* l35 = convBnLeaky(network, weightMap, *cat34->getOutput(0), 256, 3, 1, 1, 35);
 	cout << "Adding linear convolution 36\n";
-        IConvolutionLayer *conv36 = network->addConvolutionNd(*l35->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.36.Conv2d.weight"], weightMap["module_list.36.Conv2d.bias"]);
+        IConvolutionLayer* conv36 = network->addConvolutionNd(*l35->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.36.Conv2d.weight"], weightMap["module_list.36.Conv2d.bias"]);
         assert(conv36);
 
         // 37 is a yolo layer
 	cout << "Adding yolo layer 37\n";
-        auto yolo37 = yoloLayer(network, *conv36->getOutput(0), INPUT_W, INPUT_H, YOLO_FACTOR_2, YOLO_FACTOR_2, CLASS_NUM, YOLO_ANCHORS_2, YOLO_SCALE_XY_2, YOLO_NEWCOORDS_2);
+        IPluginV2Layer* yolo37 = yoloLayer(network, *conv36->getOutput(0), INPUT_W, INPUT_H, YOLO_FACTOR_2, YOLO_FACTOR_2, CLASS_NUM, YOLO_ANCHORS_2, YOLO_SCALE_XY_2, YOLO_NEWCOORDS_2);
 
 	cout << "Adding route 38\n";
         ITensor* inputTensors38[] = {yolo30->getOutput(0), yolo37->getOutput(0)};
-        auto cat38 = network->addConcatenation(inputTensors38, 2);
+        IConcatenationLayer* cat38 = network->addConcatenation(inputTensors38, 2);
+	cout << "Setting output name to: " << OUTPUT_BLOB_NAME << endl;
         cat38->getOutput(0)->setName(OUTPUT_BLOB_NAME);
         network->markOutput(*cat38->getOutput(0));
 
         // Build engine
-        builder->setMaxBatchSize(maxBatchSize);
-        config->setMaxWorkspaceSize(16 * (1 << 20));  // 16MB
+	cout << "Setting maxBatchSize: " << maxBatchSize << endl;
+        builder->setMaxBatchSize(1);
+        config->setMaxWorkspaceSize(32 * (1 << 20));  // 32MB
     #ifdef USE_FP16
         config->setFlag(BuilderFlag::kFP16);
     #endif
+	cout << "Creating engine ... " << endl;
         ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
 
         // Don't need the network any more
