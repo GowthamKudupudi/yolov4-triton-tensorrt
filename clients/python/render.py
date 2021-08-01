@@ -26,6 +26,7 @@ def render_box(img, box, color=(200, 200, 200)):
         )
     )
     thickness = max(1, thickness)
+    print(f"{x1}, {y1}, {x2}, {y2}, {thickness}")
     img = cv2.rectangle(
         img,
         (int(x1), int(y1)),

@@ -234,7 +234,11 @@ if __name__ == '__main__':
         print(f"Detected objects: {len(detected_objects)}")
 
         for box in detected_objects:
-            print(f"{COCOLabels(box.classID).name}: {box.confidence}")
+            print(f"{box.classID}: {COCOLabels(box.classID).name}: {box.confidence}")
+            x1, y1, x2, y2 = box.box()
+            if 0 > x1 or x1 > FLAGS.width or 0 > y1 or y1 > FLAGS.height or 0 > x2 or x2 > FLAGS.width or 0 > y2 or y2 > FLAGS.height:
+                print("skipping")
+                continue
             input_image = render_box(input_image, box.box(), color=tuple(RAND_COLORS[box.classID % 64].tolist()))
             size = get_text_size(input_image, f"{COCOLabels(box.classID).name}: {box.confidence:.2f}", normalised_scaling=0.6)
             input_image = render_filled_box(input_image, (box.x1 - 3, box.y1 - 3, box.x1 + size[0], box.y1 + size[1]), color=(220, 220, 220))
